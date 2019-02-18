@@ -19,3 +19,4 @@ Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
 Route::get('/shopee', 'ShopeeController@index')->name('shopee');
+Route::get('/uploadExcel', 'ShopeeController@uploadExcel')->name('uploadExcel');
