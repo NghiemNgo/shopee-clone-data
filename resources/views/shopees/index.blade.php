@@ -37,10 +37,6 @@
                       <button type="submit" class="btn btn-primary">Submit</button>
                     </form>
                     <div id="tbData"></div>
-                    <input type="file" id="fileUpload" />
-                    <input type="button" id="upload" value="Upload" onclick="Upload()" />
-                    <hr />
-                    <div id="dvExcel"></div>
                 </div>
             </div>
         </div>

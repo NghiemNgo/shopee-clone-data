@@ -10,13 +10,13 @@ $( "#SubmitShopeeLink" ).on('submit', function(e){
 	// dataTable();
 });
 
-async function getDetailItems($itemids, $shopid) {
+async function getDetailItems($itemids, byUpload = false) {
 	let url = "https://shopee.vn/api/v2/item/get";
 	let result = [];
 	await Promise.all($itemids.map(async (item) => {
 		let data = {
 	  		itemid: item.itemid,
-	  		shopid: $shopid
+	  		shopid: item.shopid
 	  	};
 	    const content = await $.ajax({
 		  	url: url,
@@ -37,13 +37,13 @@ async function getDetailItems($itemids, $shopid) {
 		  		return response.item.item;
 		  	}
 		});
-	    result.push(content);
+	    result.push({defaultData:content, newData: item});
 	}));
 	console.log(result);
-	dataTable(result);
+	dataTable(result, byUpload);
 }
 
-function dataTable($data) {
+function dataTable($data, byUpload) {
 	let stock = $("#stock").val();
 	let beforeName = $("#beforeName").val();
 	let afterName = $("#afterName").val();
@@ -64,30 +64,41 @@ function dataTable($data) {
 	let $count = 0;
 	let $export = $limit;
 	$data.forEach(function(item) {
-		let hasTag = item.item.hashtag_list;
+		let defaultData = item.defaultData.item;
+		let newData = item.newData
+		let hasTag = defaultData.hashtag_list;
 		if (hasTag) {
 			hasTag = hasTag.join(" ");
 		} else {
 			hasTag = "";
 		}
+		let productName = beforeName + defaultData.name + afterName;
+		let productDescription = beforeDescription + defaultData.description + afterDescription + hasTag;
+		let productPrice = defaultData.price/100000;
+		if (byUpload) {
+			productName = newData.name;
+			productDescription = newData.beforeDescription + newData.afterDescription + hasTag;
+			productPrice = newData.price;
+			stock = 50;
+		}
 		tbBody += '<tr>';
 		nameColumn.forEach(function(name) {
 				switch(name) {
 				  	case 'ps_category_list_id':
-					    if(item.item.categories[item.item.categories.length-1]['catid']) {
-							tbBody += '<td scope="col">' + item.item.categories[item.item.categories.length-1]['catid'] + '</td>';
+					    if(defaultData.categories[defaultData.categories.length-1]['catid']) {
+							tbBody += '<td scope="col">' + defaultData.categories[defaultData.categories.length-1]['catid'] + '</td>';
 						} else {
-							tbBody += '<td scope="col">' + item.item.catid + '</td>';
+							tbBody += '<td scope="col">' + defaultData.catid + '</td>';
 						}
 				    	break;
 				  	case 'ps_product_name':
-				    	tbBody += '<td scope="col">' + beforeName + item.item.name + afterName + '</td>';
+				    	tbBody += '<td scope="col">' + productName + '</td>';
 				    	break;
 				    case 'ps_product_description':
-				    	tbBody += '<td scope="col">' + beforeDescription + item.item.description + afterDescription + hasTag +  '</td>';
+				    	tbBody += '<td scope="col">' + productDescription +  '</td>';
 				    	break;
 				    case 'ps_price':
-				    	tbBody += '<td scope="col">' + item.item.price/100000 + '</td>';
+				    	tbBody += '<td scope="col">' + productPrice + '</td>';
 				    	break;
 				    case 'ps_stock':
 				    	tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
@@ -96,563 +107,563 @@ function dataTable($data) {
 				    	tbBody += '<td scope="col">' + 200 + '</td>';
 				    	break;
 				    case 'ps_days_to_ship':
-				    	tbBody += '<td scope="col">' + item.item.estimated_days + '</td>';
+				    	tbBody += '<td scope="col">' + defaultData.estimated_days + '</td>';
 				    	break;
 				   	case 'ps_variation 1 ps_variation_sku':
-					   	if (item.item.models[0]) {
-							tbBody += '<td scope="col">' + item.item.models[0].modelid + '</td>';
+					   	if (defaultData.models[0]) {
+							tbBody += '<td scope="col">' + defaultData.models[0].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 1 ps_variation_name':
-					   	if (item.item.models[0]) {
-							tbBody += '<td scope="col">' + item.item.models[0].name + '</td>';
+					   	if (defaultData.models[0]) {
+							tbBody += '<td scope="col">' + defaultData.models[0].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 1 ps_variation_price':
-					   	if (item.item.models[0]) {
-							tbBody += '<td scope="col">' + item.item.models[0].price/100000 + '</td>';
+					   	if (defaultData.models[0]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 1 ps_variation_stock':
-					   	if (item.item.models[0]) {
+					   	if (defaultData.models[0]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 2 ps_variation_sku':
-					   	if (item.item.models[1]) {
-							tbBody += '<td scope="col">' + item.item.models[1].modelid + '</td>';
+					   	if (defaultData.models[1]) {
+							tbBody += '<td scope="col">' + defaultData.models[1].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 2 ps_variation_name':
-					   	if (item.item.models[1]) {
-							tbBody += '<td scope="col">' + item.item.models[1].name + '</td>';
+					   	if (defaultData.models[1]) {
+							tbBody += '<td scope="col">' + defaultData.models[1].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 2 ps_variation_price':
-					   	if (item.item.models[1]) {
-							tbBody += '<td scope="col">' + item.item.models[1].price/100000 + '</td>';
+					   	if (defaultData.models[1]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 2 ps_variation_stock':
-					   	if (item.item.models[1]) {
+					   	if (defaultData.models[1]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 3 ps_variation_sku':
-					   	if (item.item.models[2]) {
-							tbBody += '<td scope="col">' + item.item.models[2].modelid + '</td>';
+					   	if (defaultData.models[2]) {
+							tbBody += '<td scope="col">' + defaultData.models[2].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 3 ps_variation_name':
-					   	if (item.item.models[2]) {
-							tbBody += '<td scope="col">' + item.item.models[2].name + '</td>';
+					   	if (defaultData.models[2]) {
+							tbBody += '<td scope="col">' + defaultData.models[2].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 3 ps_variation_price':
-					   	if (item.item.models[2]) {
-							tbBody += '<td scope="col">' + item.item.models[2].price/100000 + '</td>';
+					   	if (defaultData.models[2]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 3 ps_variation_stock':
-					   	if (item.item.models[2]) {
+					   	if (defaultData.models[2]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 4 ps_variation_sku':
-					   	if (item.item.models[3]) {
-							tbBody += '<td scope="col">' + item.item.models[3].modelid + '</td>';
+					   	if (defaultData.models[3]) {
+							tbBody += '<td scope="col">' + defaultData.models[3].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 4 ps_variation_name':
-					   	if (item.item.models[3]) {
-							tbBody += '<td scope="col">' + item.item.models[3].name + '</td>';
+					   	if (defaultData.models[3]) {
+							tbBody += '<td scope="col">' + defaultData.models[3].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 4 ps_variation_price':
-					   	if (item.item.models[3]) {
-							tbBody += '<td scope="col">' + item.item.models[3].price/100000 + '</td>';
+					   	if (defaultData.models[3]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 4 ps_variation_stock':
-					   	if (item.item.models[3]) {
+					   	if (defaultData.models[3]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 5 ps_variation_sku':
-					   	if (item.item.models[4]) {
-							tbBody += '<td scope="col">' + item.item.models[4].modelid + '</td>';
+					   	if (defaultData.models[4]) {
+							tbBody += '<td scope="col">' + defaultData.models[4].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 5 ps_variation_name':
-					   	if (item.item.models[4]) {
-							tbBody += '<td scope="col">' + item.item.models[4].name + '</td>';
+					   	if (defaultData.models[4]) {
+							tbBody += '<td scope="col">' + defaultData.models[4].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 5 ps_variation_price':
-					   	if (item.item.models[4]) {
-							tbBody += '<td scope="col">' + item.item.models[4].price/100000 + '</td>';
+					   	if (defaultData.models[4]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 5 ps_variation_stock':
-					   	if (item.item.models[4]) {
+					   	if (defaultData.models[4]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 6 ps_variation_sku':
-					   	if (item.item.models[5]) {
-							tbBody += '<td scope="col">' + item.item.models[5].modelid + '</td>';
+					   	if (defaultData.models[5]) {
+							tbBody += '<td scope="col">' + defaultData.models[5].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 6 ps_variation_name':
-					   	if (item.item.models[5]) {
-							tbBody += '<td scope="col">' + item.item.models[5].name + '</td>';
+					   	if (defaultData.models[5]) {
+							tbBody += '<td scope="col">' + defaultData.models[5].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 6 ps_variation_price':
-					   	if (item.item.models[5]) {
-							tbBody += '<td scope="col">' + item.item.models[5].price/100000 + '</td>';
+					   	if (defaultData.models[5]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 6 ps_variation_stock':
-					   	if (item.item.models[5]) {
+					   	if (defaultData.models[5]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 7 ps_variation_sku':
-					   	if (item.item.models[6]) {
-							tbBody += '<td scope="col">' + item.item.models[6].modelid + '</td>';
+					   	if (defaultData.models[6]) {
+							tbBody += '<td scope="col">' + defaultData.models[6].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 7 ps_variation_name':
-					   	if (item.item.models[6]) {
-							tbBody += '<td scope="col">' + item.item.models[6].name + '</td>';
+					   	if (defaultData.models[6]) {
+							tbBody += '<td scope="col">' + defaultData.models[6].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 7 ps_variation_price':
-					   	if (item.item.models[6]) {
-							tbBody += '<td scope="col">' + item.item.models[6].price/100000 + '</td>';
+					   	if (defaultData.models[6]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 7 ps_variation_stock':
-					   	if (item.item.models[6]) {
+					   	if (defaultData.models[6]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 8 ps_variation_sku':
-					   	if (item.item.models[7]) {
-							tbBody += '<td scope="col">' + item.item.models[7].modelid + '</td>';
+					   	if (defaultData.models[7]) {
+							tbBody += '<td scope="col">' + defaultData.models[7].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 8 ps_variation_name':
-					   	if (item.item.models[7]) {
-							tbBody += '<td scope="col">' + item.item.models[7].name + '</td>';
+					   	if (defaultData.models[7]) {
+							tbBody += '<td scope="col">' + defaultData.models[7].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 8 ps_variation_price':
-					   	if (item.item.models[7]) {
-							tbBody += '<td scope="col">' + item.item.models[7].price/100000 + '</td>';
+					   	if (defaultData.models[7]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 8 ps_variation_stock':
-					   	if (item.item.models[7]) {
+					   	if (defaultData.models[7]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 9 ps_variation_sku':
-					   	if (item.item.models[8]) {
-							tbBody += '<td scope="col">' + item.item.models[8].modelid + '</td>';
+					   	if (defaultData.models[8]) {
+							tbBody += '<td scope="col">' + defaultData.models[8].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 9 ps_variation_name':
-					   	if (item.item.models[8]) {
-							tbBody += '<td scope="col">' + item.item.models[8].name + '</td>';
+					   	if (defaultData.models[8]) {
+							tbBody += '<td scope="col">' + defaultData.models[8].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 9 ps_variation_price':
-					   	if (item.item.models[8]) {
-							tbBody += '<td scope="col">' + item.item.models[8].price/100000 + '</td>';
+					   	if (defaultData.models[8]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 9 ps_variation_stock':
-					   	if (item.item.models[8]) {
+					   	if (defaultData.models[8]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 10 ps_variation_sku':
-					   	if (item.item.models[9]) {
-							tbBody += '<td scope="col">' + item.item.models[9].modelid + '</td>';
+					   	if (defaultData.models[9]) {
+							tbBody += '<td scope="col">' + defaultData.models[9].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 10 ps_variation_name':
-					   	if (item.item.models[9]) {
-							tbBody += '<td scope="col">' + item.item.models[9].name + '</td>';
+					   	if (defaultData.models[9]) {
+							tbBody += '<td scope="col">' + defaultData.models[9].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 10 ps_variation_price':
-					   	if (item.item.models[9]) {
-							tbBody += '<td scope="col">' + item.item.models[9].price/100000 + '</td>';
+					   	if (defaultData.models[9]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 10 ps_variation_stock':
-					   	if (item.item.models[9]) {
+					   	if (defaultData.models[9]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 11 ps_variation_sku':
-					   	if (item.item.models[10]) {
-							tbBody += '<td scope="col">' + item.item.models[10].modelid + '</td>';
+					   	if (defaultData.models[10]) {
+							tbBody += '<td scope="col">' + defaultData.models[10].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 11 ps_variation_name':
-					   	if (item.item.models[10]) {
-							tbBody += '<td scope="col">' + item.item.models[10].name + '</td>';
+					   	if (defaultData.models[10]) {
+							tbBody += '<td scope="col">' + defaultData.models[10].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 11 ps_variation_price':
-					   	if (item.item.models[10]) {
-							tbBody += '<td scope="col">' + item.item.models[10].price/100000 + '</td>';
+					   	if (defaultData.models[10]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 11 ps_variation_stock':
-					   	if (item.item.models[10]) {
+					   	if (defaultData.models[10]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 12 ps_variation_sku':
-					   	if (item.item.models[11]) {
-							tbBody += '<td scope="col">' + item.item.models[11].modelid + '</td>';
+					   	if (defaultData.models[11]) {
+							tbBody += '<td scope="col">' + defaultData.models[11].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 12 ps_variation_name':
-					   	if (item.item.models[11]) {
-							tbBody += '<td scope="col">' + item.item.models[11].name + '</td>';
+					   	if (defaultData.models[11]) {
+							tbBody += '<td scope="col">' + defaultData.models[11].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 12 ps_variation_price':
-					   	if (item.item.models[11]) {
-							tbBody += '<td scope="col">' + item.item.models[11].price/100000 + '</td>';
+					   	if (defaultData.models[11]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 12 ps_variation_stock':
-					   	if (item.item.models[11]) {
+					   	if (defaultData.models[11]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 13 ps_variation_sku':
-					   	if (item.item.models[12]) {
-							tbBody += '<td scope="col">' + item.item.models[12].modelid + '</td>';
+					   	if (defaultData.models[12]) {
+							tbBody += '<td scope="col">' + defaultData.models[12].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 13 ps_variation_name':
-					   	if (item.item.models[12]) {
-							tbBody += '<td scope="col">' + item.item.models[12].name + '</td>';
+					   	if (defaultData.models[12]) {
+							tbBody += '<td scope="col">' + defaultData.models[12].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 13 ps_variation_price':
-					   	if (item.item.models[12]) {
-							tbBody += '<td scope="col">' + item.item.models[12].price/100000 + '</td>';
+					   	if (defaultData.models[12]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 13 ps_variation_stock':
-					   	if (item.item.models[12]) {
+					   	if (defaultData.models[12]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 14 ps_variation_sku':
-					   	if (item.item.models[13]) {
-							tbBody += '<td scope="col">' + item.item.models[13].modelid + '</td>';
+					   	if (defaultData.models[13]) {
+							tbBody += '<td scope="col">' + defaultData.models[13].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 14 ps_variation_name':
-					   	if (item.item.models[13]) {
-							tbBody += '<td scope="col">' + item.item.models[13].name + '</td>';
+					   	if (defaultData.models[13]) {
+							tbBody += '<td scope="col">' + defaultData.models[13].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 14 ps_variation_price':
-					   	if (item.item.models[13]) {
-							tbBody += '<td scope="col">' + item.item.models[13].price/100000 + '</td>';
+					   	if (defaultData.models[13]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 14 ps_variation_stock':
-					   	if (item.item.models[13]) {
+					   	if (defaultData.models[13]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 15 ps_variation_sku':
-					   	if (item.item.models[14]) {
-							tbBody += '<td scope="col">' + item.item.models[14].modelid + '</td>';
+					   	if (defaultData.models[14]) {
+							tbBody += '<td scope="col">' + defaultData.models[14].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 15 ps_variation_name':
-					   	if (item.item.models[14]) {
-							tbBody += '<td scope="col">' + item.item.models[14].name + '</td>';
+					   	if (defaultData.models[14]) {
+							tbBody += '<td scope="col">' + defaultData.models[14].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 15 ps_variation_price':
-					   	if (item.item.models[14]) {
-							tbBody += '<td scope="col">' + item.item.models[14].price/100000 + '</td>';
+					   	if (defaultData.models[14]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 15 ps_variation_stock':
-					   	if (item.item.models[14]) {
+					   	if (defaultData.models[14]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 16 ps_variation_sku':
-					   	if (item.item.models[15]) {
-							tbBody += '<td scope="col">' + item.item.models[15].modelid + '</td>';
+					   	if (defaultData.models[15]) {
+							tbBody += '<td scope="col">' + defaultData.models[15].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 16 ps_variation_name':
-					   	if (item.item.models[15]) {
-							tbBody += '<td scope="col">' + item.item.models[15].name + '</td>';
+					   	if (defaultData.models[15]) {
+							tbBody += '<td scope="col">' + defaultData.models[15].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 16 ps_variation_price':
-					   	if (item.item.models[15]) {
-							tbBody += '<td scope="col">' + item.item.models[15].price/100000 + '</td>';
+					   	if (defaultData.models[15]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 16 ps_variation_stock':
-					   	if (item.item.models[15]) {
+					   	if (defaultData.models[15]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 17 ps_variation_sku':
-					   	if (item.item.models[16]) {
-							tbBody += '<td scope="col">' + item.item.models[16].modelid + '</td>';
+					   	if (defaultData.models[16]) {
+							tbBody += '<td scope="col">' + defaultData.models[16].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 17 ps_variation_name':
-					   	if (item.item.models[16]) {
-							tbBody += '<td scope="col">' + item.item.models[16].name + '</td>';
+					   	if (defaultData.models[16]) {
+							tbBody += '<td scope="col">' + defaultData.models[16].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 17 ps_variation_price':
-					   	if (item.item.models[16]) {
-							tbBody += '<td scope="col">' + item.item.models[16].price/100000 + '</td>';
+					   	if (defaultData.models[16]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 17 ps_variation_stock':
-					   	if (item.item.models[16]) {
+					   	if (defaultData.models[16]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 18 ps_variation_sku':
-					   	if (item.item.models[17]) {
-							tbBody += '<td scope="col">' + item.item.models[17].modelid + '</td>';
+					   	if (defaultData.models[17]) {
+							tbBody += '<td scope="col">' + defaultData.models[17].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 18 ps_variation_name':
-					   	if (item.item.models[17]) {
-							tbBody += '<td scope="col">' + item.item.models[17].name + '</td>';
+					   	if (defaultData.models[17]) {
+							tbBody += '<td scope="col">' + defaultData.models[17].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 18 ps_variation_price':
-					   	if (item.item.models[17]) {
-							tbBody += '<td scope="col">' + item.item.models[17].price/100000 + '</td>';
+					   	if (defaultData.models[17]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 18 ps_variation_stock':
-					   	if (item.item.models[17]) {
+					   	if (defaultData.models[17]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 19 ps_variation_sku':
-					   	if (item.item.models[18]) {
-							tbBody += '<td scope="col">' + item.item.models[18].modelid + '</td>';
+					   	if (defaultData.models[18]) {
+							tbBody += '<td scope="col">' + defaultData.models[18].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 19 ps_variation_name':
-					   	if (item.item.models[18]) {
-							tbBody += '<td scope="col">' + item.item.models[18].name + '</td>';
+					   	if (defaultData.models[18]) {
+							tbBody += '<td scope="col">' + defaultData.models[18].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 19 ps_variation_price':
-					   	if (item.item.models[18]) {
-							tbBody += '<td scope="col">' + item.item.models[18].price/100000 + '</td>';
+					   	if (defaultData.models[18]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 19 ps_variation_stock':
-					   	if (item.item.models[18]) {
+					   	if (defaultData.models[18]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 20 ps_variation_sku':
-					   	if (item.item.models[19]) {
-							tbBody += '<td scope="col">' + item.item.models[19].modelid + '</td>';
+					   	if (defaultData.models[19]) {
+							tbBody += '<td scope="col">' + defaultData.models[19].modelid + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 20 ps_variation_name':
-					   	if (item.item.models[19]) {
-							tbBody += '<td scope="col">' + item.item.models[19].name + '</td>';
+					   	if (defaultData.models[19]) {
+							tbBody += '<td scope="col">' + defaultData.models[19].name + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 20 ps_variation_price':
-					   	if (item.item.models[19]) {
-							tbBody += '<td scope="col">' + item.item.models[19].price/100000 + '</td>';
+					   	if (defaultData.models[19]) {
+							tbBody += '<td scope="col">' + productPrice + '</td>';
 					   	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				   		break;
 				   	case 'ps_variation 20 ps_variation_stock':
-					   	if (item.item.models[19]) {
+					   	if (defaultData.models[19]) {
 					    		tbBody += '<td scope="col">' + (stock ? stock : 0) + '</td>';
 						} else {
 					   		tbBody += '<td scope="col"></td>';
@@ -660,64 +671,64 @@ function dataTable($data) {
 				   		break;
 
 				    case 'ps_img_1':
-				    	if (item.item.images[0]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[0] + '</td>';
+				    	if (defaultData.images[0]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[0] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_2':
-				    	if (item.item.images[1]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[1] + '</td>';
+				    	if (defaultData.images[1]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[1] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_3':
-				    	if (item.item.images[2]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[2] + '</td>';
+				    	if (defaultData.images[2]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[2] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_4':
-				    	if (item.item.images[3]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[3] + '</td>';
+				    	if (defaultData.images[3]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[3] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_5':
-				    	if (item.item.images[4]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[4] + '</td>';
+				    	if (defaultData.images[4]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[4] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_6':
-				    	if (item.item.images[5]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[5] + '</td>';
+				    	if (defaultData.images[5]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[5] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_7':
-				    	if (item.item.images[6]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[6] + '</td>';
+				    	if (defaultData.images[6]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[6] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_8':
-				    	if (item.item.images[7]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[7] + '</td>';
+				    	if (defaultData.images[7]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[7] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
 				    	break;
 			    	case 'ps_img_9':
-				    	if (item.item.images[8]) {
-				    		tbBody += '<td scope="col">' + linkImg + item.item.images[8] + '</td>';
+				    	if (defaultData.images[8]) {
+				    		tbBody += '<td scope="col">' + linkImg + defaultData.images[8] + '</td>';
 				    	} else {
 					   		tbBody += '<td scope="col"></td>';
 					   	}
@@ -809,10 +820,10 @@ function callAPI($shopid, $page, $items) {
 	  	success: function(response){
 	  		$page += 100;
 	  		response.items.forEach(function(item) {
-			   	$items.push({itemid: item.itemid});
+			   	$items.push({itemid: item.itemid, shopid: $shopid});
 			});
 	    	if ($page > response.total_count) {
-	    		getDetailItems($items, $shopid);
+	    		getDetailItems($items);
 	    	} else {
 	    		callAPI($shopid, $page, $items);
 	    	}
@@ -856,6 +867,7 @@ function Upload() {
         alert("Please upload a valid Excel file.");
     }
 };
+
 function ProcessExcel(data) {
     //Read the Excel File data.
     var workbook = XLSX.read(data, {
@@ -883,7 +895,7 @@ function ProcessExcel(data) {
     headerCell = document.createElement("TH");
     headerCell.innerHTML = "Link";
     row.appendChild(headerCell);
-
+    var $listItems = [];
     //Add the data rows from Excel file.
     for (var i = 0; i < excelRows.length; i++) {
         //Add the data row.
@@ -894,7 +906,17 @@ function ProcessExcel(data) {
         cell.innerHTML = excelRows[i].No;
 
         cell = row.insertCell(-1);
-        cell.innerHTML = excelRows[i].Link;
+        let linkProduct = excelRows[i].Link;
+        cell.innerHTML = linkProduct;
+        let arrData = linkProduct.split('.');
+        $listItems.push({
+        	itemid: arrData[arrData.length-1], 
+        	shopid: arrData[arrData.length-2],
+        	name: excelRows[i].Name,
+        	price:excelRows[i].Price,
+        	beforeDescription: excelRows[i].Before_Description,
+        	afterDescription: excelRows[i].After_Description,
+        });
     }
 
     var dvExcel = document.getElementById("dvExcel");
@@ -903,4 +925,5 @@ function ProcessExcel(data) {
     lable.innerHTML = 'Result';
     dvExcel.appendChild(lable);
     dvExcel.appendChild(table);
+    getDetailItems($listItems, true);
 };
