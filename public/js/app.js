@@ -81,6 +81,7 @@ function dataTable($data, byUpload) {
 			productPrice = newData.price;
 			stock = 50;
 		}
+		defaultData.estimated_days = 2; // default time to ship 2 days;
 		tbBody += '<tr>';
 		nameColumn.forEach(function(name) {
 				switch(name) {
@@ -762,20 +763,10 @@ function dataTable($data, byUpload) {
 			tbBody += '</tbody>'
 				+ '</table>';
 			tbData = tbHead + tbBody;
-			console.log('Download data');
-
-			var a = document.createElement('a');
-	        //getting data from our div that contains the HTML table
-	        var data_type = 'data:application/vnd.ms-excel';
-	        a.href = data_type + ', ' + encodeURIComponent(tbData);
-	        //setting the file name
-	        a.download = 'shopee_products_part' + part + '.xls';
-	        //triggering the function
-	        a.click();
-	        part ++;
-	        //just in case, prevent default behaviour
-
-			// window.open('data:application/vnd.ms-excel,' + encodeURIComponent(tbData));
+			
+			var divContent = document.getElementById('dvExcel');
+			appendHtml(divContent, tbData, exportExcelTable);
+			console.log('done');
 
 			tbHead = '<table class="table table-dark">'
 					  + '<thead>'
@@ -920,10 +911,31 @@ function ProcessExcel(data) {
     }
 
     var dvExcel = document.getElementById("dvExcel");
-    dvExcel.innerHTML = "";
+    // dvExcel.innerHTML = "";
     var lable = document.createElement("label");
     lable.innerHTML = 'Result';
-    dvExcel.appendChild(lable);
-    dvExcel.appendChild(table);
+    // dvExcel.appendChild(lable);
+    // dvExcel.appendChild(table);
     getDetailItems($listItems, true);
 };
+
+function appendHtml(el, str, callback) {
+  var div = document.createElement('div');
+  div.innerHTML = str;
+  while (div.children.length > 0) {
+    el.appendChild(div.children[0]);
+  }
+  callback(el);
+}
+
+function exportExcelTable(el){
+	var wb = XLSX.utils.table_to_book(el, {sheet:"Shopee"});
+    var wbout = XLSX.write(wb, {bookType:'xlsx', bookSST:true, type: 'binary'});
+    function s2ab(s) {
+        var buf = new ArrayBuffer(s.length);
+        var view = new Uint8Array(buf);
+        for (var i=0; i<s.length; i++) view[i] = s.charCodeAt(i) & 0xFF;
+        return buf;
+    }
+    saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), 'shopee.xlsx');
+}

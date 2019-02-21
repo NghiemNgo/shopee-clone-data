@@ -10,7 +10,7 @@
                 <input type="button" id="upload" value="Upload" onclick="Upload()" />
                 <hr />
                 <a href='{{ route('downloadFileExample') }}'>Example File Excel</a>
-                <div id="dvExcel"></div>
+                <div id="dvExcel" class="hidden"></div>
             </div>
         </div>
     </div>
