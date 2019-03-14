@@ -36,7 +36,7 @@
                         </div>
                       <button type="submit" class="btn btn-primary">Submit</button>
                     </form>
-                    <div id="tbData"></div>
+                    <div id="dvExcel"></div>
                 </div>
             </div>
         </div>

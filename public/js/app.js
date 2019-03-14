@@ -3,7 +3,7 @@ var linkImg = 'https://cf.shopee.vn/file/';
 var $limit = 100;
 $( "#SubmitShopeeLink" ).on('submit', function(e){
   	e.preventDefault();
-  	let shopid = 15961538;
+  	let shopid = 39707209;
   	let page = 0;
   	let items = [];
   	let result = callAPI(shopid, page, items);
@@ -72,9 +72,9 @@ function dataTable($data, byUpload) {
 		} else {
 			hasTag = "";
 		}
-		let productName = beforeName + defaultData.name + afterName;
+		let productName = beforeName + defaultData.name.replace("FREESHIP ĐƠN 99K_", ""); + afterName;
 		let productDescription = beforeDescription + defaultData.description + afterDescription + hasTag;
-		let productPrice = defaultData.price/100000;
+		let productPrice = defaultData.price/100000 - 1000;
 		if (byUpload) {
 			productName = newData.name;
 			productDescription = newData.beforeDescription + newData.afterDescription + hasTag;
